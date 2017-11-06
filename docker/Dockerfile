@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends \
         python-numpy \
 	python-shapely \
 	python-geopandas \
+	python-scipy \
     libsqlite3-mod-spatialite \
     && rm -rf /var/lib/apt/lists/*
 
