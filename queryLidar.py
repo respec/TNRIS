@@ -40,7 +40,7 @@ pipeline.validate() # check if our JSON and options were good
 count = pipeline.execute()
 print("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
 
-json_src=open('py/py_pipe.json').read()
+json_src=open('json/pipeline.json').read()
 pipeline_json = unicode(json_src)
 pipeline = pdal.Pipeline(pipeline_json)
 pipeline.validate() # check if our JSON and options were good
