@@ -24,10 +24,10 @@ def inundation(ins,outs):
     # below floodplain
     below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array)])
     below_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
-    below_gdf.to_file('geopandas/below_points.shp')
+    below_gdf.to_file('shp/below_points.shp')
     flood = alpha_shape(below_gdf.geometry,0.035)
     flood_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
-    flood_gdf.to_file('geopandas/below_all_0.035.shp')
+    flood_gdf.to_file('shp/below.shp')
 
 
     # # above floodplain
