@@ -45,7 +45,7 @@ def innundation(ins,outs):
     from fastkml import kml
     # Create the root KML object
     k = kml.KML()
-    k.from_string(unicode(open('kml/temlate.kml').read()).encode('utf8'))
+    k.from_string(unicode(open('kml/template.kml').read()).encode('utf8'))
     ns = '{http://www.opengis.net/kml/2.2}'
 
     # # Create a KML Document and add it to the KML root object
