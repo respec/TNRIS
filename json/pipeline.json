@@ -1,0 +1,11 @@
+{
+  "pipeline":[
+    "laz/run.laz",
+    {
+      "type":"filters.python",
+      "script": "py/innundation_filter.py",
+      "function":"innundation",
+      "module":"anything"
+    }
+  ]
+}
