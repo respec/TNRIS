@@ -3,8 +3,8 @@
     "laz/run.laz",
     {
       "type":"filters.python",
-      "script": "py/innundation_filter.py",
-      "function":"innundation",
+      "script": "py/inundation_filter.py",
+      "function":"inundation",
       "module":"anything"
     }
   ]
