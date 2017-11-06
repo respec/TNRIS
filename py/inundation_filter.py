@@ -1,4 +1,4 @@
-def innundation(ins,outs):
+def inundation(ins,outs):
     import sys
     from shapely.geometry import asMultiPoint,MultiPoint,Polygon,MultiPolygon
     import numpy as np
@@ -68,7 +68,7 @@ def innundation(ins,outs):
         f.append(p)
 
     # Print out the KML Object as a string
-    f = open('kml/innundation_all.kml','w')
+    f = open('kml/inundation.kml','w')
     f.write(k.to_string())
     f.close()
     return True
