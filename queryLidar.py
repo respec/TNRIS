@@ -20,12 +20,12 @@ pipeline_json = """
         "type": "readers.greyhound",
         "url": "aws.greyhound.io",
         "resource": "houston",
-        "depth_begin":14,
-        "depth_end": 18,
+        "depth_begin":16,
+        "depth_end": 17,
         "filter":{
-            "Classification": {"$in":[1,2,9]}
+            "Classification": {"$in":[2,9]}
         },
-        "bounds":[-10599574.0414,3465280.4304,0,-10593437.2451,3468729.4304,8]
+        "bounds":[-10591230.564,3468548.94503,0,-10587214.7986,3470568.17172,10]
     },
     {
       "type":"writers.las",
