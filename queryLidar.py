@@ -2,52 +2,88 @@
 
 import pdal
 import time
+import sys, getopt
 
-start = time.time()
+def main(argv):
+    start = time.time()
+    bounds = []
+    depth = 0
+    try:
+      opts, args = getopt.getopt(argv,"hb:d:",["bounds=","depth="])
+    except getopt.GetoptError:
+      print 'queryLidar.py -b [xMin,yMin,xMax,yMax] -d <depth(m...)>'
+      sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print 'queryLidar.py -b [xMin,yMin,xMax,yMax] -d <depth(m)>'
+            sys.exit()
+        elif opt in ("-b", "--bounds"):
+            bounds = arg
+        elif opt in ("-d", "--depth"):
+            depth = arg
+        elif bounds==[] or depth==0:
+            print 'queryLidar.py -b [xMin,yMin,xMax,yMax] -d <depth(m)>'
+            sys.exit()
 
-# minX = -10595574.0414
-# minY = 3467280.4304
-# minZ = 0
-# maxX = -10593437.2451
-# maxY = 3468729.4304
-# maxZ = 7
+    minX = eval(bounds)[0]
+    minY = eval(bounds)[1]
+    minZ = 0
+    maxX = eval(bounds)[2]
+    maxY = eval(bounds)[3]
+    maxZ = int(round(eval(depth),0)) + 5
 
-# get the data
-pipeline_json = """
-{
-  "pipeline":[
+    # get the data
+    pipeline_json = """
     {
-        "type": "readers.greyhound",
-        "url": "aws.greyhound.io",
-        "resource": "houston",
-        "depth_begin":16,
-        "depth_end": 17,
-        "filter":{
-            "Classification": {"$in":[2,9]}
+      "pipeline":[
+        {
+            "type": "readers.greyhound",
+            "url": "aws.greyhound.io",
+            "resource": "houston",
+            "depth_begin":14,
+            "depth_end": 15,
+            "filter":{
+                "Classification": {"$in":[2,9]}
+            },
+            "bounds":[%(minX)s,%(minY)s,%(minZ)s,%(maxX)s,%(maxY)s,%(maxZ)s]
         },
-        "bounds":[-10591230.564,3468548.94503,0,-10587214.7986,3470568.17172,10]
-    },
-    {
-      "type":"writers.las",
-      "filename":"laz/run.laz"
+        {
+          "type":"writers.las",
+          "filename":"laz/run.laz"
+        }
+      ]
     }
-  ]
-}
-"""
+    """ %({"minX":minX,"minY":minY,"minZ":minZ,"maxX":maxX,"maxY":maxY,"maxZ":maxZ})
+    print(pipeline_json)
 
-pipeline = pdal.Pipeline(unicode(pipeline_json))
-pipeline.validate() # check if our JSON and options were good
-count = pipeline.execute()
-print("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    pipeline = pdal.Pipeline(unicode(pipeline_json))
+    pipeline.validate() # check if our JSON and options were good
+    count = pipeline.execute()
+    print("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
 
-json_src=open('json/pipeline.json').read()
-pipeline_json = unicode(json_src)
-pipeline = pdal.Pipeline(pipeline_json)
-pipeline.validate() # check if our JSON and options were good
-# pipeline.loglevel = 8 #really noisy
-count = pipeline.execute()
-# arrays = pipeline.arrays
-# metadata = pipeline.metadata
-# log = pipeline.log
+    pipeline_json = """
+    {
+      "pipeline":[
+        "laz/run.laz",
+        {
+          "type":"filters.python",
+          "script": "py/inundation_filter.py",
+          "function":"inundation",
+          "module":"anything",
+          "pdalargs":"{\\"depth\\":%(depth)s}"
+        }
+      ]
+    }"""%({"depth":depth})
+    print(pipeline_json)
+    pipeline = pdal.Pipeline(unicode(pipeline_json))
+    pipeline.validate() # check if our JSON and options were good
+    # pipeline.loglevel = 8 #really noisy
+    count = pipeline.execute()
+    # arrays = pipeline.arrays
+    # metadata = pipeline.metadata
+    # log = pipeline.log
 
-print("Processing Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    print("Processing Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+
+if __name__ == "__main__":
+   main(sys.argv[1:])

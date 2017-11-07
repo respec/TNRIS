@@ -5,7 +5,8 @@
       "type":"filters.python",
       "script": "py/inundation_filter.py",
       "function":"inundation",
-      "module":"anything"
+      "module":"anything",
+      "pdalargs":"{\"depth\":7.3}"
     }
   ]
 }
