@@ -1,4 +1,4 @@
-# tnris
+# TNRIS
 TNRIS Project
 
 1. Build docker image from docker/Dockerfile and run
