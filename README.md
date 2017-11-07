@@ -9,11 +9,11 @@ docker run -it -v /drive/for/docker/to/mount:/docker/mount/location <image_name>
 # docker /data is a good mount location
 ```
 
-2. Set the bounds in the *queryLidar.py* file and set the *depth* variable in the *py/innundation_filter.py*
-
-3. Run queryLidar.py with bounds and depth input
+2. Make executible and run queryLidar.py with bounds and depth input
 ```shell
-./queryLidar.py -b <[xMin,yMin,xMax,yMax]> -d <depth in meters>
+chmod +x queryLidar.py
+# python queryLidar.py -b <[xMin,yMin,xMax,yMax]> -d <depth in meters>
+./queryLidar.py -b [-10603019.1099,3478865.61026,-10595026.0129,3482627.59836] -d 8
 ```
 
 4. Retrieve kml output from *kml/innundation.kml*
