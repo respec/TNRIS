@@ -3,6 +3,7 @@ MAINTAINER Howard Butler <howard@hobu.co>
 
 ENV CC gcc
 ENV CXX g++
+ENV PATH /data:$PATH
 
 RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends \
         libhpdf-dev \
@@ -179,4 +180,3 @@ RUN apt-get update && apt-get install -y \
     libpcl-visualization1.7 \
     python-all-dev \
     python-pip
-

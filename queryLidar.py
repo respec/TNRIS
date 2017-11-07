@@ -54,12 +54,13 @@ def main(argv):
       ]
     }
     """ %({"minX":minX,"minY":minY,"minZ":minZ,"maxX":maxX,"maxY":maxY,"maxZ":maxZ})
-    print(pipeline_json)
+    # print(pipeline_json)
 
     pipeline = pdal.Pipeline(unicode(pipeline_json))
     pipeline.validate() # check if our JSON and options were good
     count = pipeline.execute()
-    print("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    sys.stdout.flush()
 
     pipeline_json = """
     {
@@ -74,7 +75,7 @@ def main(argv):
         }
       ]
     }"""%({"depth":depth})
-    print(pipeline_json)
+    # print(pipeline_json)
     pipeline = pdal.Pipeline(unicode(pipeline_json))
     pipeline.validate() # check if our JSON and options were good
     # pipeline.loglevel = 8 #really noisy
