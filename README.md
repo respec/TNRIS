@@ -16,4 +16,4 @@ chmod +x queryLidar.py
 ./queryLidar.py -b [-10603019.1099,3478865.61026,-10595026.0129,3482627.59836] -d 8
 ```
 
-4. Retrieve kml output from *kml/innundation.kml*
+3. Retrieve kml output from *kml/innundation.kml*
