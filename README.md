@@ -5,7 +5,7 @@ TNRIS Project
 ```sh
 cd ./docker/
 sudo docker build -t <image_name> .
-sudo docker run -it -v [local path the git repo]:/data <image_name>:latest /bin/bash
+sudo docker run -name pdal -dit -v [local path the git repo]:/data <image_name>:latest /bin/bash
 # Script currently assumes /data
 ```
 
