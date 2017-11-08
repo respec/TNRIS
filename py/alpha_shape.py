@@ -59,4 +59,5 @@ def alpha_shape(points, alpha):
             add_edge(edges, edge_points, coords, ic, ia)
     m = geometry.MultiLineString(edge_points)
     triangles = list(polygonize(m))
+    # return cascaded_union(triangle)
     return triangles, edge_points

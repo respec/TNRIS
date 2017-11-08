@@ -28,12 +28,18 @@ def inundation(ins,outs):
     below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
     below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
     below_points_gdf.to_file('shp/below_points.shp')
+    sys.stdout.write("Below points successfully exported\n")
+    sys.stdout.flush()
     flood_triangles = alpha_shape(below_points_gdf.geometry,0.035)
     flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
-    flood_triangles_gdf.to_file('shp/below_triangles.shp')    
-    below_polygon = cascaded_union(triangles)
-    below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
+    flood_triangles_gdf.to_file('shp/below_triangles.shp')
+    sys.stdout.write("Below points successfully triangulated and exported\n")
+    sys.stdout.flush()
+    below_polygon = cascaded_union(flood_triangles_gdf.geometry)
+    below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty]).to_crs({'init': 'epsg:4326'})
     below_polygon_gdf.to_file('shp/below_polygon.shp')
+    sys.stdout.write("Below polygon successfully exported\n")
+    sys.stdout.flush()
 
 
     # # above floodplain
@@ -90,4 +96,6 @@ def inundation(ins,outs):
     kmlString = k.to_string()
     f.write(kmlString.replace("<kml:Polygon>","<kml:Polygon>%s"%(addExtrude)))
     f.close()
+    sys.stdout.write("KML successfully created\n")
+    sys.stdout.flush()
     return True
