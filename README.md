@@ -5,8 +5,8 @@ TNRIS Project
 ```sh
 cd ./docker/
 sudo docker build -t <image_name> .
-sudo docker run -it -v /drive/for/docker/to/mount:/docker/mount/location <image_name>:latest /bin/bash
-# docker /data is a good mount location
+sudo docker run -it -v [local path the git repo]:/data <image_name>:latest /bin/bash
+# Script currently assumes /data
 ```
 
 2. Make executible and run queryLidar.py with bounds and depth input
