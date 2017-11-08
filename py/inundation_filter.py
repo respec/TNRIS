@@ -26,12 +26,14 @@ def inundation(ins,outs):
     # below floodplain
     # below_points = gpd.GeoSeries([Point(i) for i in below_array])
     below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
-    below_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
-    below_gdf.to_file('shp/below_points.shp')
-    flood_triangles = alpha_shape(below_gdf.geometry,0.035)
-    flood = cascaded_union(triangles)
-    flood_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
-    flood_gdf.to_file('shp/below.shp')
+    below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
+    below_points_gdf.to_file('shp/below_points.shp')
+    flood_triangles = alpha_shape(below_points_gdf.geometry,0.035)
+    flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
+    flood_triangles_gdf.to_file('shp/below_triangles.shp')    
+    below_polygon = cascaded_union(triangles)
+    below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
+    below_polygon_gdf.to_file('shp/below_polygon.shp')
 
 
     # # above floodplain
@@ -64,7 +66,7 @@ def inundation(ins,outs):
     f = kml.Folder(ns, 'fid', 'Depth %s'%(depth), 'Polygons in this folder represent a flood depth of %s meters'%(depth))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
-    for i in flood_gdf.geometry:
+    for i in below_polygon_gdf.geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(depth))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
