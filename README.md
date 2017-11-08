@@ -4,8 +4,8 @@ TNRIS Project
 1. Build docker image from docker/Dockerfile and run
 ```sh
 cd ./docker/
-docker build -t <image_name> .
-docker run -it -v /drive/for/docker/to/mount:/docker/mount/location <image_name>:latest /bin/bash
+sudo docker build -t <image_name> .
+sudo docker run -it -v /drive/for/docker/to/mount:/docker/mount/location <image_name>:latest /bin/bash
 # docker /data is a good mount location
 ```
 
