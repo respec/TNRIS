@@ -31,12 +31,12 @@ def inundation(ins,outs):
     sys.stdout.write("Below points successfully exported\n")
     sys.stdout.flush()
     flood_triangles = alpha_shape(below_points_gdf.geometry,0.035)
-    flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
+    flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty])
     flood_triangles_gdf.to_file('shp/below_triangles.shp')
     sys.stdout.write("Below points successfully triangulated and exported\n")
     sys.stdout.flush()
     below_polygon = cascaded_union(flood_triangles_gdf.geometry)
-    below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty]).to_crs({'init': 'epsg:4326'})
+    below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty])
     below_polygon_gdf.to_file('shp/below_polygon.shp')
     sys.stdout.write("Below polygon successfully exported\n")
     sys.stdout.flush()
@@ -72,7 +72,7 @@ def inundation(ins,outs):
     f = kml.Folder(ns, 'fid', 'Depth %s'%(depth), 'Polygons in this folder represent a flood depth of %s meters'%(depth))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
-    for i in below_polygon_gdf.geometry:
+    for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(depth))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
