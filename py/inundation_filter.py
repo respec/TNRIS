@@ -1,6 +1,7 @@
 def inundation(ins,outs):
     import sys
     from shapely.geometry import asMultiPoint,MultiPoint,Polygon,MultiPolygon, asPoint, Point, asPolygon
+    from shapely.ops import cascaded_union
     import numpy as np
     import geopandas as gpd
     sys.path.append('/data/py')
@@ -27,7 +28,8 @@ def inundation(ins,outs):
     below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
     below_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
     below_gdf.to_file('shp/below_points.shp')
-    flood = alpha_shape(below_gdf.geometry,0.035)
+    flood_triangles = alpha_shape(below_gdf.geometry,0.035)
+    flood = cascaded_union(triangles)
     flood_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood[0] if not i.is_empty]).to_crs({'init': 'epsg:4326'})
     flood_gdf.to_file('shp/below.shp')
 
