@@ -43,11 +43,11 @@ def main():
     """ %({"minX":minX,"minY":minY,"minZ":minZ,"maxX":maxX,"maxY":maxY,"maxZ":maxZ,'mind':mind,'maxd':maxd})
     # print(pipeline_json)
 
-    pipeline = pdal.Pipeline(unicode(pipeline_json))
-    pipeline.validate() # check if our JSON and options were good
-    count = pipeline.execute()
-    sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
-    sys.stdout.flush()
+    # pipeline = pdal.Pipeline(unicode(pipeline_json))
+    # pipeline.validate() # check if our JSON and options were good
+    # count = pipeline.execute()
+    # sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    # sys.stdout.flush()
 
     pipeline_json = """
     {
@@ -163,7 +163,7 @@ def usage(err=""):
     --mind              minimum octree depth requested (defaults to 14)\n\
     --maxd              maximum octree depth requested must be greater than\n\
                         \'--mind\' (defaults to 15)\n\n\
-    -a, --altitudeMode  [ grd | abs ] kml clamped to ground or absolute\n'
+    -a, --altitudeMode  [ gnd | abs ] kml clamped to ground or absolute\n'
     return
 
 if __name__ == "__main__":
