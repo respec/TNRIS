@@ -9,13 +9,15 @@ def inundation(ins,outs):
     from alpha_shape import alpha_shape
 
     elevation = pdalargs['elevation']
-    kml_name  = pdalargs['kml_name']
+    outputName  = pdalargs['outputName']
     altitudeMode = pdalargs['altitudeMode']
-    kml_to_create = "kml/%s_%s_%s.kml" %(kml_name,elevation,altitudeMode)
+    outputFileName = "%s_%s" %(outputName,elevation)
     if altitudeMode == 'gnd':
-        kml_doc_name = "%s (%sm Clamped to Ground)" %(kml_name,elevation)
+        kml_to_create = "kml/%s_ground.kml"%(outputFileName)
+        kml_doc_name = "%s (%sm Clamped to Ground)" %(outputName,elevation)
     else:
-        kml_doc_name = "%s (%sm Absolute)" %(kml_name,elevation)
+        kml_to_create = "kml/%s_absolute.kml"%(outputFileName)
+        kml_doc_name = "%s (%sm Absolute)" %(outputName,elevation)
 
     crs = {'init':'epsg:3857'}
 
@@ -35,20 +37,20 @@ def inundation(ins,outs):
     # below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
     below_points = gpd.GeoSeries([Point(i) for i in below_array])
     below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
-    below_points_gdf.to_file('shp/below_points.shp')
+    below_points_gdf.to_file('shp/%s_below_points.shp'%(outputFileName))
     # fiona can't overwrite a geojson, remove first
-    removeFile("geojson/below_points.geojson")
-    below_points_gdf.to_file('geojson/below_points.geojson', driver='GeoJSON')
+    removeFile("geojson/%s_below_points.geojson"%(outputFileName))
+    below_points_gdf.to_file('geojson/%s_below_points.geojson'%(outputFileName), driver='GeoJSON')
     sys.stdout.write("Below points successfully exported\n")
     sys.stdout.flush()
     flood_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in below_array[:,0:2]]),0.035)
     flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty])
-    flood_triangles_gdf.to_file('shp/below_triangles.shp')
+    flood_triangles_gdf.to_file('shp/%s_below_triangles.shp'%(outputFileName))
     sys.stdout.write("Below points successfully triangulated and exported\n")
     sys.stdout.flush()
     below_polygon = cascaded_union(flood_triangles_gdf.geometry)
     below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty])
-    below_polygon_gdf.to_file('shp/below_polygon.shp')
+    below_polygon_gdf.to_file('shp/%s_below_polygon.shp'%(outputFileName))
     sys.stdout.write("Below polygon successfully exported\n")
     sys.stdout.flush()
 
@@ -56,10 +58,10 @@ def inundation(ins,outs):
     # above floodplain
     above_points = gpd.GeoSeries([Point(i) for i in above_array])
     above_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_points])
-    above_gdf.to_file('shp/above_points.shp')
+    above_gdf.to_file('shp/%s_above_points.shp'%(outputFileName))
     # fiona can't overwrite a geojson, remove first
-    removeFile("geojson/above_points.geojson")
-    above_gdf.to_file('geojson/above_points.geojson', driver='GeoJSON')
+    removeFile("geojson/%s_above_points.geojson"%(outputFileName))
+    above_gdf.to_file('geojson/%s_above_points.geojson'%(outputFileName), driver='GeoJSON')
     sys.stdout.write("Above points successfully exported\n")
     sys.stdout.flush()
 
