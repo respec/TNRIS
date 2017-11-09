@@ -1,5 +1,6 @@
+import sys, os
+
 def inundation(ins,outs):
-    import sys
     from shapely.geometry import asMultiPoint,MultiPoint,Polygon,MultiPolygon, asPoint, Point, asPolygon
     from shapely.ops import cascaded_union
     import numpy as np
@@ -7,8 +8,15 @@ def inundation(ins,outs):
     sys.path.append('/data/py')
     from alpha_shape import alpha_shape
 
+    elevation = pdalargs['elevation']
+    kml_name  = pdalargs['kml_name']
+    altitudeMode = pdalargs['altitudeMode']
+    kml_to_create = "kml/%s_%s_%s.kml" %(kml_name,elevation,altitudeMode)
+    if altitudeMode == 'gnd':
+        kml_doc_name = "%s (%sm Clamped to Ground)" %(kml_name,elevation)
+    else:
+        kml_doc_name = "%s (%sm Absolute)" %(kml_name,elevation)
 
-    depth = int(round(pdalargs['depth'],0))
     crs = {'init':'epsg:3857'}
 
     # extract our x,y,z and stack
@@ -20,17 +28,20 @@ def inundation(ins,outs):
     # f.write("%s"%(dict(zip(classifications, counts))))
     # f.close()
 
-    below_array = np_array[(depth >= np_array[:,2]) & (np_array[:,2] >= 0)][:,0:2]
-    # above_array = np_array[(depth < np_array[:,2]) & (np_array[:,2] < 100)][:,0:3] # arbitrary top filter (watch elevation of location)
+    below_array = np_array[(elevation >= np_array[:,2]) & (np_array[:,2] >= 0)][:,0:3]
+    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 2))][:,0:3] # arbitrary top filter (watch elevation of location)
 
     # below floodplain
-    # below_points = gpd.GeoSeries([Point(i) for i in below_array])
-    below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
+    # below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
+    below_points = gpd.GeoSeries([Point(i) for i in below_array])
     below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
     below_points_gdf.to_file('shp/below_points.shp')
+    # fiona can't overwrite a geojson, remove first
+    removeFile("geojson/below_points.geojson")
+    below_points_gdf.to_file('geojson/below_points.geojson', driver='GeoJSON')
     sys.stdout.write("Below points successfully exported\n")
     sys.stdout.flush()
-    flood_triangles = alpha_shape(below_points_gdf.geometry,0.035)
+    flood_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in below_array[:,0:2]]),0.035)
     flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty])
     flood_triangles_gdf.to_file('shp/below_triangles.shp')
     sys.stdout.write("Below points successfully triangulated and exported\n")
@@ -42,18 +53,24 @@ def inundation(ins,outs):
     sys.stdout.flush()
 
 
-    # # above floodplain
-    # above_points = gpd.GeoSeries([Point(i) for i in above_array])
-    # above_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_points])
-    # above_gdf.to_file('shp/above_points.shp')
-    # high = alpha_shape(above_gdf.geometry,0.035)
+    # above floodplain
+    above_points = gpd.GeoSeries([Point(i) for i in above_array])
+    above_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_points])
+    above_gdf.to_file('shp/above_points.shp')
+    # fiona can't overwrite a geojson, remove first
+    removeFile("geojson/above_points.geojson")
+    above_gdf.to_file('geojson/above_points.geojson', driver='GeoJSON')
+    sys.stdout.write("Above points successfully exported\n")
+    sys.stdout.flush()
+
+    # high = alpha_shape(gpd.GeoSeries([Point(i) for i in above_array[:,0:2]]),0.035)
     # high_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in high[0] if not i.is_empty])
     # high_gdf.to_file('shp/above.shp')
 
     # innundation = flood_gdf.difference(high_gdf)
     # gpd.GeoDataFrame(crs=crs,geometry=innundation).to_file('shp/innundation.shp')
 
-    # # build kml
+    # build kml
     import fastkml
     from fastkml import kml,gx
     # Create the root KML object
@@ -61,19 +78,17 @@ def inundation(ins,outs):
     k.from_string(unicode(open('kml/template.kml').read()).encode('utf8'))
     ns = '{http://www.opengis.net/kml/2.2}'
 
-    # # Create a KML Document and add it to the KML root object
-    # d = kml.Document(ns, 'docid', 'doc name', 'doc description')
-    # k.append(d)
-    # lookup the document tag
+    # # Find the KML Document and add it to our KML root object
     d = list(k.features())[0]
+    d.name = kml_doc_name
 
 
     # Create a KML Folder and add it to the Document
-    f = kml.Folder(ns, 'fid', 'Depth %s'%(depth), 'Polygons in this folder represent a flood depth of %s meters'%(depth))
+    f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
     for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
-        p = kml.Placemark(ns, 'id', '%s meters'%(depth))
+        p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
         # p.geometry = Polygon((' 7.0))').join((' 7.0, ').join(i.wkt.split('((')[0].split(', ')).split('))')))
@@ -81,21 +96,29 @@ def inundation(ins,outs):
         geom = fastkml.geometry.Geometry()
         for ii in i.exterior.coords:
             l = list(ii)
-            l.append(depth)
+            l.append(elevation)
             vertices.append(tuple(l))
         geom.geometry = Polygon(vertices)
-        # geom.extrude=True
-        # geom.altitudeMode="absolute"
         p.geometry = geom
         f.append(p)
 
 
     # Print out the KML Object as a string
-    f = open('kml/inundation.kml','w')
-    addExtrude = "<extrude>1</extrude><altitudeMode>absolute</altitudeMode>"
+    f = open(kml_to_create,'w')
+    if altitudeMode == "abs":
+        addExtrude = "<extrude>1</extrude><altitudeMode>absolute</altitudeMode>"
+    else:
+        addExtrude = ""
     kmlString = k.to_string()
     f.write(kmlString.replace("<kml:Polygon>","<kml:Polygon>%s"%(addExtrude)))
     f.close()
     sys.stdout.write("KML successfully created\n")
     sys.stdout.flush()
     return True
+
+
+def removeFile(filename):
+    try:
+        os.remove(filename)
+    except OSError:
+        pass
