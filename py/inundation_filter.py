@@ -11,7 +11,7 @@ def inundation(ins,outs):
     elevation = pdalargs['elevation']
     outputName  = pdalargs['outputName']
     altitudeMode = pdalargs['altitudeMode']
-    outputFileName = "%s_%s" %(outputName,elevation)
+    outputFileName = "%s_%sm" %(outputName,elevation)
     if altitudeMode == 'gnd':
         kml_to_create = "kml/%s_ground.kml"%(outputFileName)
         kml_doc_name = "%s (%sm Clamped to Ground)" %(outputName,elevation)
