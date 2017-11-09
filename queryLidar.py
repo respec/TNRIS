@@ -3,7 +3,7 @@
 import pdal
 import time
 import sys, getopt
-global kml_name, bounds, elevation, mind, maxd, altitudeMode, start
+global outputName, bounds, elevation, mind, maxd, altitudeMode, start
 
 def main():
     # time our processes
@@ -58,10 +58,10 @@ def main():
           "script": "py/inundation_filter.py",
           "function":"inundation",
           "module":"anything",
-          "pdalargs":"{\\"elevation\\":%(elevation)s,\\"kml_name\\":\\"%(kml_name)s\\",\\"altitudeMode\\":\\"%(altitudeMode)s\\"}"
+          "pdalargs":"{\\"elevation\\":%(elevation)s,\\"outputName\\":\\"%(outputName)s\\",\\"altitudeMode\\":\\"%(altitudeMode)s\\"}"
         }
       ]
-    }"""%({"elevation":elevation,"kml_name":kml_name,"altitudeMode":altitudeMode})
+    }"""%({"elevation":elevation,"outputName":outputName,"altitudeMode":altitudeMode})
     # print(pipeline_json)
     pipeline = pdal.Pipeline(unicode(pipeline_json))
     pipeline.validate() # check if our JSON and options were good
@@ -74,9 +74,9 @@ def main():
     print("Processing Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
 
 def parseOpts():
-    global kml_name, bounds, elevation, mind, maxd, altitudeMode
+    global outputName, bounds, elevation, mind, maxd, altitudeMode
     start = time.time()
-    kml_name=""
+    outputName=""
     bounds = []
     elevation = 0
     mind = None
@@ -103,7 +103,7 @@ def parseOpts():
             if len(arg)==0:
                 print usage("Name can not be empty")
                 sys.exit()
-            kml_name = arg
+            outputName = arg
         elif opt in ("-b", "--bounds"):
             if arg == "[]":
                 usage("bounds must be in format [xMin,yMin,xMax,yMax]")
@@ -139,7 +139,7 @@ def parseOpts():
         altitudeMode = "abs"
 
     # # print results for testing
-    # print("NAME: %(name)s\nBounds: %(bounds)s\nElevation:%(elevation)s\nMinD:%(mind)s\nMaxD:%(maxd)s\nAltitudeMode:%(altitudeMode)s\n"%({'name':kml_name,'bounds':bounds,'elevation':elevation,'mind':mind,'maxd':maxd,'altitudeMode':altitudeMode}))
+    # print("NAME: %(name)s\nBounds: %(bounds)s\nElevation:%(elevation)s\nMinD:%(mind)s\nMaxD:%(maxd)s\nAltitudeMode:%(altitudeMode)s\n"%({'name':outputName,'bounds':bounds,'elevation':elevation,'mind':mind,'maxd':maxd,'altitudeMode':altitudeMode}))
 
 def usage(err=""):
     print '\n'
