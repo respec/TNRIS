@@ -69,63 +69,63 @@ def inundation(ins,outs):
 
     above_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in above_array[:,0:2]]),0.03)
     above_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangles[0] if not i.is_empty])
-    above_triangles_gdf.to_file('shp/above_triangles_0.03.shp')
+    above_triangles_gdf.to_file('shp/%s_above_triangles_0.03.shp'%(outputFileName))
     sys.stdout.write("Above points successfully triangulated and exported\n")
     sys.stdout.flush()
 
     above_polygon = cascaded_union(above_triangles_gdf.geometry)
-    above_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(5, join_style=1).buffer(-5.0, join_style=1) for i in above_polygon if not i.is_empty])
-    above_polygon_gdf.to_file('shp/above_polygon.shp')
+    above_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_polygon if not i.is_empty])
+    above_polygon_gdf.to_file('shp/%s_above_polygon.shp'%(outputFileName))
     sys.stdout.write("Above polygon successfully exported\n")
     sys.stdout.flush()
 
     innundation = below_polygon_gdf.difference(above_polygon_gdf)
-    gpd.GeoDataFrame(crs=crs,geometry=[i for i in innundation if not i.is_empty]).to_file('shp/innundation.shp')
+    gpd.GeoDataFrame(crs=crs,geometry=[i for i in innundation if not i.is_empty]).to_file('shp/%s_innundation.shp'%(outputFileName))
 
-    # # build kml
-    # import fastkml
-    # from fastkml import kml,gx
-    # # Create the root KML object
-    # k = kml.KML()
-    # k.from_string(unicode(open('kml/template.kml').read()).encode('utf8'))
-    # ns = '{http://www.opengis.net/kml/2.2}'
-    #
-    # # # Find the KML Document and add it to our KML root object
-    # d = list(k.features())[0]
-    # d.name = kml_doc_name
-    #
-    #
-    # # Create a KML Folder and add it to the Document
-    # f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
-    # d.append(f)
-    # # Create a Placemark with a polygon geometry and add it to the folder
-    # for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
-    #     p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
-    #     p.styleUrl = "#m_ylw-pushpin"
-    #     # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
-    #     # p.geometry = Polygon((' 7.0))').join((' 7.0, ').join(i.wkt.split('((')[0].split(', ')).split('))')))
-    #     vertices = []
-    #     geom = fastkml.geometry.Geometry()
-    #     for ii in i.exterior.coords:
-    #         l = list(ii)
-    #         l.append(elevation)
-    #         vertices.append(tuple(l))
-    #     geom.geometry = Polygon(vertices)
-    #     p.geometry = geom
-    #     f.append(p)
-    #
-    #
-    # # Print out the KML Object as a string
-    # f = open(kml_to_create,'w')
-    # if altitudeMode == "abs":
-    #     addExtrude = "<extrude>1</extrude><altitudeMode>absolute</altitudeMode>"
-    # else:
-    #     addExtrude = ""
-    # kmlString = k.to_string()
-    # f.write(kmlString.replace("<kml:Polygon>","<kml:Polygon>%s"%(addExtrude)))
-    # f.close()
-    # sys.stdout.write("KML successfully created\n")
-    # sys.stdout.flush()
+    # build kml
+    import fastkml
+    from fastkml import kml,gx
+    # Create the root KML object
+    k = kml.KML()
+    k.from_string(unicode(open('kml/template.kml').read()).encode('utf8'))
+    ns = '{http://www.opengis.net/kml/2.2}'
+
+    # # Find the KML Document and add it to our KML root object
+    d = list(k.features())[0]
+    d.name = kml_doc_name
+
+
+    # Create a KML Folder and add it to the Document
+    f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
+    d.append(f)
+    # Create a Placemark with a polygon geometry and add it to the folder
+    for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+        p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
+        p.styleUrl = "#m_ylw-pushpin"
+        # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
+        # p.geometry = Polygon((' 7.0))').join((' 7.0, ').join(i.wkt.split('((')[0].split(', ')).split('))')))
+        vertices = []
+        geom = fastkml.geometry.Geometry()
+        for ii in i.exterior.coords:
+            l = list(ii)
+            l.append(elevation)
+            vertices.append(tuple(l))
+        geom.geometry = Polygon(vertices)
+        p.geometry = geom
+        f.append(p)
+
+
+    # Print out the KML Object as a string
+    f = open(kml_to_create,'w')
+    if altitudeMode == "abs":
+        addExtrude = "<extrude>1</extrude><altitudeMode>absolute</altitudeMode>"
+    else:
+        addExtrude = ""
+    kmlString = k.to_string()
+    f.write(kmlString.replace("<kml:Polygon>","<kml:Polygon>%s"%(addExtrude)))
+    f.close()
+    sys.stdout.write("KML successfully created\n")
+    sys.stdout.flush()
     return True
 
 
