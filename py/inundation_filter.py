@@ -78,7 +78,7 @@ def inundation(ins,outs):
     sys.stdout.flush()
 
     innundation = below_polygon_gdf.difference(above_polygon_gdf)
-    gpd.GeoDataFrame(crs=crs,geometry=innundation).to_file('shp/innundation.shp')
+    gpd.GeoDataFrame(crs=crs,geometry=[i for i in innundation if not i.is_empty]).to_file('shp/innundation.shp')
 
     # # build kml
     # import fastkml
