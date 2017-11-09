@@ -79,8 +79,11 @@ def inundation(ins,outs):
     sys.stdout.write("Above polygon successfully exported\n")
     sys.stdout.flush()
 
-    innundation = below_polygon_gdf.difference(above_polygon_gdf)
-    gpd.GeoDataFrame(crs=crs,geometry=[i for i in innundation if not i.is_empty]).to_file('shp/%s_innundation.shp'%(outputFileName))
+    # innundation = below_polygon_gdf.difference(above_polygon_gdf)
+    inundation = gpd.overlay(below_polygon_gdf,above_polygon_gdf,how='difference')
+    inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-5,join_style=1).buffer(5,join_style=1) for i in inundation.geometry])
+    inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
+    inundation_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
 
     # build kml
     import fastkml
@@ -99,7 +102,8 @@ def inundation(ins,outs):
     f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
-    for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+    # for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+    for i in inundation_gdf.to_crs({'init': 'epsg:4326'}).geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
