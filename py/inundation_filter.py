@@ -8,6 +8,13 @@ def inundation(ins,outs):
     sys.path.append('/data/py')
     from alpha_shape import alpha_shape
 
+    # default apt-get install version of geopandas is not complete. check for overlay function
+    if not 'overlay' in dir(gpd):
+        sys.stdout.write("\n\n**********\nOverlay function not in installed version of geopandas.\nRun pip install --upgrade geopandas to install.\n**********\n\n")
+        sys.stdout.flush()
+        return False
+
+
     elevation = pdalargs['elevation']
     outputName  = pdalargs['outputName']
     altitudeMode = pdalargs['altitudeMode']
