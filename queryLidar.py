@@ -43,11 +43,11 @@ def main():
     """ %({"minX":minX,"minY":minY,"minZ":minZ,"maxX":maxX,"maxY":maxY,"maxZ":maxZ,'mind':mind,'maxd':maxd})
     # print(pipeline_json)
 
-    # pipeline = pdal.Pipeline(unicode(pipeline_json))
-    # pipeline.validate() # check if our JSON and options were good
-    # count = pipeline.execute()
-    # sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
-    # sys.stdout.flush()
+    pipeline = pdal.Pipeline(unicode(pipeline_json))
+    pipeline.validate() # check if our JSON and options were good
+    count = pipeline.execute()
+    sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    sys.stdout.flush()
 
     pipeline_json = """
     {
