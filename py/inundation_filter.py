@@ -38,7 +38,7 @@ def inundation(ins,outs):
     # f.close()
 
     below_array = np_array[(elevation >= np_array[:,2]) & (np_array[:,2] >= 0)][:,0:3]
-    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 3))][:,0:3] # arbitrary top filter (watch elevation of location)
+    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 5))][:,0:3] # arbitrary top filter (watch elevation of location)
 
     # # below floodplain
     # below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
@@ -88,7 +88,8 @@ def inundation(ins,outs):
 
     # innundation = below_polygon_gdf.difference(above_polygon_gdf)
     inundation = gpd.overlay(below_polygon_gdf,above_polygon_gdf,how='difference')
-    inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-5,join_style=1).buffer(5,join_style=1) for i in inundation.geometry])
+    # inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-5,join_style=1).buffer(5,join_style=1) for i in inundation.geometry])
+    inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in inundation.geometry])
     inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
     inundation_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
 
