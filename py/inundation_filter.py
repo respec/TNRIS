@@ -38,7 +38,7 @@ def inundation(ins,outs):
     # f.close()
 
     below_array = np_array[(elevation >= np_array[:,2]) & (np_array[:,2] >= 0)][:,0:3]
-    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 5))][:,0:3] # arbitrary top filter (watch elevation of location)
+    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 3))][:,0:3] # arbitrary top filter (watch elevation of location)
 
     # # below floodplain
     # below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
