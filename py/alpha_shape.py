@@ -5,6 +5,7 @@ from shapely import geometry
 from scipy.spatial import Delaunay
 import numpy as np
 import math
+
 def alpha_shape(points, alpha):
     """
     Compute the alpha shape (concave hull) of a set
@@ -48,16 +49,18 @@ def alpha_shape(points, alpha):
         c = math.sqrt((pc[0]-pa[0])**2 + (pc[1]-pa[1])**2)
         # Semiperimeter of triangle
         s = (a + b + c)/2.0
-        # Area of triangle by Heron's formula
-        area = math.sqrt(s*(s-a)*(s-b)*(s-c))
-	if area > 0:
-            circum_r = a*b*c/(4.0*area)
-            # Here's the radius filter.
-            #print circum_r
-            if circum_r < 1.0/alpha:
-                add_edge(edges, edge_points, coords, ia, ib)
-                add_edge(edges, edge_points, coords, ib, ic)
-                add_edge(edges, edge_points, coords, ic, ia)
+        # Area of triangle by Heron's formula - checking that we have proper geometry
+        delta = (s*(s-a)*(s-b)*(s-c))
+        if delta > 0:
+            area = math.sqrt(s*(s-a)*(s-b)*(s-c))
+            if area > 0:
+                circum_r = a*b*c/(4.0*area)
+                # Here's the radius filter.
+                #print circum_r
+                if circum_r < 1.0/alpha:
+                    add_edge(edges, edge_points, coords, ia, ib)
+                    add_edge(edges, edge_points, coords, ib, ic)
+                    add_edge(edges, edge_points, coords, ic, ia)
     m = geometry.MultiLineString(edge_points)
     triangles = list(polygonize(m))
     # return cascaded_union(triangle)
