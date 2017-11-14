@@ -110,6 +110,7 @@ def inundation(ins,outs):
     f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
+
     # for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
     for i in inundation_gdf.to_crs({'init': 'epsg:4326'}).geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
