@@ -9,6 +9,13 @@ def inundation(ins,outs):
     sys.path.append('/data/py')
     from alpha_shape import alpha_shape
 
+    # default apt-get install version of geopandas is not complete. check for overlay function
+    if not 'overlay' in dir(gpd):
+        sys.stdout.write("\n\n**********\nOverlay function not in installed version of geopandas.\nRun pip install --upgrade geopandas to install.\n**********\n\n")
+        sys.stdout.flush()
+        return False
+
+
     elevation = pdalargs['elevation']
     outputName  = pdalargs['outputName']
     altitudeMode = pdalargs['altitudeMode']
@@ -70,23 +77,24 @@ def inundation(ins,outs):
     sys.stdout.write("Above points successfully exported\n")
     sys.stdout.flush()
 
-    # above_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in above_array[:,0:2]]),0.03)
-    # above_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangles[0] if not i.is_empty])
-    # above_triangles_gdf.to_file('shp/%s_above_triangles_0.03.shp'%(outputFileName))
-    # sys.stdout.write("Above points successfully triangulated and exported\n")
-    # sys.stdout.flush()
-    #
-    # above_polygon = cascaded_union(above_triangles_gdf.geometry)
-    # above_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_polygon if not i.is_empty])
-    # above_polygon_gdf.to_file('shp/%s_above_polygon.shp'%(outputFileName))
-    # sys.stdout.write("Above polygon successfully exported\n")
-    # sys.stdout.flush()
+    above_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in above_array[:,0:2]]),0.03)
+    above_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangles[0] if not i.is_empty])
+    above_triangles_gdf.to_file('shp/%s_above_triangles_0.03.shp'%(outputFileName))
+    sys.stdout.write("Above points successfully triangulated and exported\n")
+    sys.stdout.flush()
 
-    # # innundation = below_polygon_gdf.difference(above_polygon_gdf)
-    # inundation = gpd.overlay(below_polygon_gdf,above_polygon_gdf,how='difference')
+    above_polygon = cascaded_union(above_triangles_gdf.geometry)
+    above_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_polygon if not i.is_empty])
+    above_polygon_gdf.to_file('shp/%s_above_polygon.shp'%(outputFileName))
+    sys.stdout.write("Above polygon successfully exported\n")
+    sys.stdout.flush()
+
+    # innundation = below_polygon_gdf.difference(above_polygon_gdf)
+    inundation = gpd.overlay(below_polygon_gdf,above_polygon_gdf,how='difference')
     # inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-5,join_style=1).buffer(5,join_style=1) for i in inundation.geometry])
-    # inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
-    # inundation_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
+    inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in inundation.geometry])
+    inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
+    inundation_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
 
     # build kml
     import fastkml
@@ -105,7 +113,9 @@ def inundation(ins,outs):
     f = kml.Folder(ns, 'fid', 'Elevation %s'%(elevation), 'Polygons in this folder represent a flood elevation of %s meters'%(elevation))
     d.append(f)
     # Create a Placemark with a polygon geometry and add it to the folder
-    for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+
+    # for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+    for i in inundation_gdf.to_crs({'init': 'epsg:4326'}).geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
