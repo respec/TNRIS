@@ -1,4 +1,5 @@
 import sys, os
+import zipfile
 
 def inundation(ins,outs):
     from shapely.geometry import asMultiPoint,MultiPoint,Polygon,MultiPolygon, asPoint, Point, asPolygon
@@ -14,9 +15,11 @@ def inundation(ins,outs):
     outputFileName = "%s_%sm" %(outputName,elevation)
     if altitudeMode == 'gnd':
         kml_to_create = "kml/%s_ground.kml"%(outputFileName)
+        kmz_to_create = "kmz/%s_ground.kmz"%(outputFileName)
         kml_doc_name = "%s (%sm Clamped to Ground)" %(outputName,elevation)
     else:
         kml_to_create = "kml/%s_absolute.kml"%(outputFileName)
+        kmz_to_create = "kmz/%s_absolute.kmz"%(outputFileName)
         kml_doc_name = "%s (%sm Absolute)" %(outputName,elevation)
 
     crs = {'init':'epsg:3857'}
@@ -129,6 +132,12 @@ def inundation(ins,outs):
     f.close()
     sys.stdout.write("KML successfully created\n")
     sys.stdout.flush()
+
+    zipfile.ZipFile(kmz_to_create, mode='w').write(kml_to_create)
+    sys.stdout.write("KMZ successfully created\n")
+    sys.stdout.flush()
+
+
     return True
 
 
