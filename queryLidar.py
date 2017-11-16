@@ -48,6 +48,10 @@ def main():
     pipeline = pdal.Pipeline(unicode(pipeline_json))
     pipeline.validate() # check if our JSON and options were good
     count = pipeline.execute()
+    if not count > 0:
+        sys.stdout.write("\nNo points available for the elevation requested (%s meters).\nCheck the ground elevation of the area of interest and try again.\n\n"%(elevation))
+        sys.stdout.flush()
+        sys.exit()
     sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
     sys.stdout.flush()
 
