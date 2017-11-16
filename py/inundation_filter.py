@@ -73,8 +73,8 @@ def inundation(ins,outs):
     sys.stdout.flush()
 
     # check that we have points before trying to do anything with them
-    if len(above_array) < 1000:
-        sys.stdout.write("\nThere are %s points above the requested elevation. Not processing the above point and just exporting area below requested elevation.\n\n"%(len(above_array)))
+    if len(above_array) < 5000:
+        sys.stdout.write("\nThere are %s points above the requested elevation. Not processing the above points and just exporting area below requested elevation.\n\n"%(len(above_array)))
         sys.stdout.flush()
         inundation_gdf = below_polygon_gdf
     else:
