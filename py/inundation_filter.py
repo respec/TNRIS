@@ -1,12 +1,21 @@
 import sys, os
 import zipfile
+import time
+
+sys.path.append('/data/py')
+last = None
 
 def inundation(ins,outs):
-    from shapely.geometry import asMultiPoint,MultiPoint,Polygon,MultiPolygon, asPoint, Point, asPolygon
+    """
+    Function called by pdal pipeline to process points into an inundation KMZ
+    """
+    global start, last
+    last = time.time()
+    from shapely.geometry import Polygon, Point
     from shapely.ops import cascaded_union
     import numpy as np
     import geopandas as gpd
-    sys.path.append('/data/py')
+    from geopandas.tools import sjoin
     from alpha_shape import alpha_shape
 
     # default apt-get install version of geopandas is not complete. check for overlay function
@@ -15,10 +24,15 @@ def inundation(ins,outs):
         sys.stdout.flush()
         return False
 
-
     elevation = pdalargs['elevation']
     outputName  = pdalargs['outputName']
     altitudeMode = pdalargs['altitudeMode']
+    start = float(pdalargs["start"])
+    if pdalargs["writeLayers"] == "True":
+        writeLayers = True
+    else:
+        writeLayers = False
+
     outputFileName = "%s_%sm" %(outputName,elevation)
     if altitudeMode == 'gnd':
         kml_to_create = "kml/%s_ground.kml"%(outputFileName)
@@ -34,14 +48,16 @@ def inundation(ins,outs):
     # extract our x,y,z and stack
     np_array = np.column_stack((ins['X'],ins['Y'],ins['Z'],ins['Classification']))
 
-    # # get our break down of classifications
+    # # get a break down of classifications if we want
     # classifications,counts = np.unique(ins['Classification'],return_counts=True)
     # f=open('Classification_Counts.txt','w')
     # f.write("%s"%(dict(zip(classifications, counts))))
     # f.close()
 
+    # process points below the requested elevation
     below_array = np_array[(elevation >= np_array[:,2]) & (np_array[:,2] >= 0)][:,0:3]
-    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 3))][:,0:3] # arbitrary top filter (watch elevation of location)
+    sys.stdout.write("1) Selection of below points complete\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
+    sys.stdout.flush()
 
     # check that we have points before trying to do anything with them
     if len(below_array) < 1000:
@@ -49,31 +65,34 @@ def inundation(ins,outs):
         sys.stdout.flush()
         return False
 
-    # # below floodplain
-    # below_points = gpd.GeoSeries([i for i in asMultiPoint(below_array) if not i.is_empty])
     below_points = gpd.GeoSeries([Point(i) for i in below_array])
     below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
-    below_points_gdf.to_file('shp/%s_below_points.shp'%(outputFileName))
-    # fiona can't overwrite a geojson, remove first
-    removeFile("geojson/%s_below_points.geojson"%(outputFileName))
-    below_points_gdf.to_file('geojson/%s_below_points.geojson'%(outputFileName), driver='GeoJSON')
-    sys.stdout.write("Below points successfully exported\n")
-    sys.stdout.flush()
+    if writeLayers:
+        below_points_gdf.to_file('shp/%s_below_points.shp'%(outputFileName))
+        # fiona can't overwrite a geojson, remove first
+        removeFile("geojson/%s_below_points.geojson"%(outputFileName))
+        below_points_gdf.to_file('geojson/%s_below_points.geojson'%(outputFileName), driver='GeoJSON')
 
     flood_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in below_array[:,0:2]]),0.03)
     flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty])
-    flood_triangles_gdf.to_file('shp/%s_below_triangles.shp'%(outputFileName))
-    sys.stdout.write("Below points successfully triangulated and exported\n")
+    if writeLayers:
+        flood_triangles_gdf.to_file('shp/%s_below_triangles.shp'%(outputFileName))
+    sys.stdout.write("1a) Below points successfully triangulated\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
     sys.stdout.flush()
 
     below_polygon = cascaded_union(flood_triangles_gdf.geometry)
     below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty])
-    below_polygon_gdf.to_file('shp/%s_below_polygon.shp'%(outputFileName))
-    sys.stdout.write("Below polygon successfully exported\n")
+    if writeLayers:
+        below_polygon_gdf.to_file('shp/%s_below_polygon.shp'%(outputFileName))
+    sys.stdout.write("1b) Below polygon successfully dissolved\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
     sys.stdout.flush()
 
+    # process points above requested elevation
+    above_array = np_array[(elevation < np_array[:,2]) & (np_array[:,2] < (elevation + 3))][:,0:3] # arbitrary top filter (watch elevation of location)
+    sys.stdout.write("2) Selection of above points complete\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
+    sys.stdout.flush()
     # check that we have points before trying to do anything with them
-    if len(above_array) < 5000:
+    if len(above_array) < 1:
         sys.stdout.write("\nThere are %s points above the requested elevation. Not processing the above points and just exporting area below requested elevation.\n\n"%(len(above_array)))
         sys.stdout.flush()
         inundation_gdf = below_polygon_gdf
@@ -81,31 +100,46 @@ def inundation(ins,outs):
         # above floodplain
         above_points = gpd.GeoSeries([Point(i) for i in above_array])
         above_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_points])
-        above_gdf.to_file('shp/%s_above_points.shp'%(outputFileName))
-        # fiona can't overwrite a geojson, remove first
-        removeFile("geojson/%s_above_points.geojson"%(outputFileName))
-        above_gdf.to_file('geojson/%s_above_points.geojson'%(outputFileName), driver='GeoJSON')
-        sys.stdout.write("Above points successfully exported\n")
-        sys.stdout.flush()
+        if writeLayers:
+            above_gdf.to_file('shp/%s_above_points.shp'%(outputFileName))
+            # fiona can't overwrite a geojson, remove first
+            removeFile("geojson/%s_above_points.geojson"%(outputFileName))
+            above_gdf.to_file('geojson/%s_above_points.geojson'%(outputFileName), driver='GeoJSON')
 
         above_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in above_array[:,0:2]]),0.03)
         above_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangles[0] if not i.is_empty])
-        above_triangles_gdf.to_file('shp/%s_above_triangles_0.03.shp'%(outputFileName))
-        sys.stdout.write("Above points successfully triangulated and exported\n")
+        if writeLayers:
+            above_triangles_gdf.to_file('shp/%s_above_triangles.shp'%(outputFileName))
+        sys.stdout.write("2a) Above points successfully triangulated\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
 
-        above_polygon = cascaded_union(above_triangles_gdf.geometry)
-        above_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_polygon if not i.is_empty])
-        above_polygon_gdf.to_file('shp/%s_above_polygon.shp'%(outputFileName))
-        sys.stdout.write("Above polygon successfully exported\n")
+        # select polygons above that intersect below points
+        below_points_buffered = gpd.GeoDataFrame(crs=crs,geometry=below_points_gdf.buffer(1))
+        if writeLayers:
+            below_points_buffered.to_file('shp/below_points_buffered.shp')
+        sys.stdout.write("2b-1) Below points successfully buffered by 1m\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
+        above_triangles_below = sjoin(above_triangles_gdf, below_points_buffered, how='left', op='intersects')
+        above_triangles_clean = above_triangles_below[above_triangles_below.index_right.isnull()]
+        above_triangels_clean_union = cascaded_union(above_triangles_clean.geometry)
+        above_triangels_clean_union_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangels_clean_union if not i.is_empty])
+        if writeLayers:
+            above_triangles_clean.to_file('shp/%s_above_triangles.shp'%(outputFileName))
+        sys.stdout.write("2b-2 - 2d) Above triangles coincident with below points(bufffered by 1) removed\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
+        sys.stdout.flush()
+
 
         # innundation = below_polygon_gdf.difference(above_polygon_gdf)
-        inundation = gpd.overlay(below_polygon_gdf,above_polygon_gdf,how='difference')
-        # inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-5,join_style=1).buffer(5,join_style=1) for i in inundation.geometry])
-        inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in inundation.geometry])
+        inundation = gpd.overlay(below_polygon_gdf,above_triangels_clean_union_gdf,how='difference')
+        sys.stdout.write("3) Inundation layer created from difference of below polygon and cleaned above polygon\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
+        sys.stdout.flush()
+        inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-2,join_style=1).buffer(10,join_style=1).buffer(-8,join_style=1) for i in inundation.geometry])
         inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
-        inundation_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
+        inundation_clean_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in cascaded_union(inundation_gdf.geometry)])
+        sys.stdout.write("4) Inundation layer smoothed\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
+        sys.stdout.flush()
+        if writeLayers:
+            inundation_clean_gdf.to_file('shp/%s_inundation.shp'%(outputFileName))
 
     # build kml
     import fastkml
@@ -126,7 +160,7 @@ def inundation(ins,outs):
     # Create a Placemark with a polygon geometry and add it to the folder
 
     # for i in below_polygon_gdf.to_crs({'init': 'epsg:4326'}).geometry:
-    for i in inundation_gdf.to_crs({'init': 'epsg:4326'}).geometry:
+    for i in inundation_clean_gdf.to_crs({'init': 'epsg:4326'}).geometry:
         p = kml.Placemark(ns, 'id', '%s meters'%(elevation))
         p.styleUrl = "#m_ylw-pushpin"
         # p.geometry =  i #Polygon([(0, 0, 0), (1, 1, 0), (1, 0, 1)])
@@ -151,19 +185,33 @@ def inundation(ins,outs):
     kmlString = k.to_string()
     f.write(kmlString.replace("<kml:Polygon>","<kml:Polygon>%s"%(addExtrude)))
     f.close()
-    sys.stdout.write("KML successfully created\n")
-    sys.stdout.flush()
-
+    # create kmz from kml
     zipfile.ZipFile(kmz_to_create, mode='w').write(kml_to_create)
-    sys.stdout.write("KMZ successfully created\n")
+    sys.stdout.write("5) Inundation KML/KMZ created\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
     sys.stdout.flush()
-
 
     return True
 
 
 def removeFile(filename):
+    """
+    Simple function to remove file if it exists
+    """
     try:
         os.remove(filename)
     except OSError:
         pass
+
+
+def toc():
+    """
+    A simple function to take start/last time ans return array of time elapsed
+    since last call and since process started
+    """
+    global last,start
+    if last == None:
+        timer = [None, round((time.time()-start),1)]
+    else:
+        timer = [round((time.time()-last),1), round((time.time()-start),1)]
+    last = time.time()
+    return timer

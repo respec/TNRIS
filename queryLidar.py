@@ -3,7 +3,7 @@
 import pdal
 import time
 import sys, getopt
-global outputName, bounds, boundsSrid, elevation, mind, maxd, altitudeMode, start
+global outputName, bounds, boundsSrid, elevation, mind, maxd, altitudeMode, start, writeLayers
 
 def main():
     # time our processes
@@ -52,7 +52,7 @@ def main():
         sys.stdout.write("\nNo points available for the elevation requested (%s meters).\nCheck the ground elevation of the area of interest and try again.\n\n"%(elevation))
         sys.stdout.flush()
         sys.exit()
-    sys.stdout.write("Retrieval Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    sys.stdout.write("\n\n0) Retrieval of %s points from Greyhound complete\n     - %s/%s seconds (last step/total)\n" %(str(count),round((time.time()-start),1),round((time.time()-start),1)))
     sys.stdout.flush()
 
     pipeline_json = """
@@ -64,10 +64,10 @@ def main():
           "script": "py/inundation_filter.py",
           "function":"inundation",
           "module":"anything",
-          "pdalargs":"{\\"elevation\\":%(elevation)s,\\"outputName\\":\\"%(outputName)s\\",\\"altitudeMode\\":\\"%(altitudeMode)s\\"}"
+          "pdalargs":"{\\"elevation\\":%(elevation)s,\\"outputName\\":\\"%(outputName)s\\",\\"altitudeMode\\":\\"%(altitudeMode)s\\",\\"start\\":\\"%(start)s\\",\\"writeLayers\\":\\"%(writeLayers)s\\"}"
         }
       ]
-    }"""%({"elevation":elevation,"outputName":outputName,"altitudeMode":altitudeMode})
+    }"""%({"elevation":elevation,"outputName":outputName,"altitudeMode":altitudeMode,"start":start,"writeLayers":writeLayers})
     # print(pipeline_json)
     pipeline = pdal.Pipeline(unicode(pipeline_json))
     pipeline.validate() # check if our JSON and options were good
@@ -77,7 +77,7 @@ def main():
     # metadata = pipeline.metadata
     # log = pipeline.log
 
-    print("Processing Complete: Count: %s in %s seconds\n" %(str(count),time.time()-start))
+    print("\n\nProcessing Complete: %s points in %s seconds\n" %(str(count),round((time.time()-start),1)))
 
 def checkBounds():
     global bounds
@@ -108,7 +108,7 @@ def checkBounds():
     sys.stdout.flush()
 
 def parseOpts():
-    global outputName, bounds, boundsSrid, elevation, mind, maxd, altitudeMode
+    global outputName, bounds, boundsSrid, elevation, mind, maxd, altitudeMode, writeLayers
     start = time.time()
     outputName=""
     bounds = []
@@ -117,8 +117,9 @@ def parseOpts():
     mind = None
     maxd = None
     altitudeMode = None
+    writeLayers = False
     try:
-        opts, args = getopt.getopt(sys.argv[1:],"hsan:b:e:",["name=","bounds=","srid=","elevation=","mind=","maxd=","altitudeMode="])
+        opts, args = getopt.getopt(sys.argv[1:],"hsan:b:e:",["name=","bounds=","srid=","elevation=","mind=","maxd=","altitudeMode=","writeLayers"])
     except getopt.GetoptError:
         usage("Incorrect arguments provided")
         sys.exit(2)
@@ -159,6 +160,9 @@ def parseOpts():
                 usage("To set altitudeMode, the argument must either be \'gnd\' or \'abs\'")
                 sys.exit()
             altitudeMode = arg
+        elif opt in ("--writeLayers"):
+            if not arg == "False":
+                writeLayers = True
 
     # check mind and maxd values
     if mind==None and maxd==None:
@@ -201,7 +205,8 @@ def usage(err=""):
     --mind              minimum octree depth requested (defaults to 14)\n\
     --maxd              maximum octree depth requested must be greater than\n\
                         \'--mind\' (defaults to 15)\n\n\
-    --a, --altitudeMode  [ gnd | abs ] kml clamped to ground or absolute\n'
+    --a, --altitudeMode  [ gnd | abs ] kml clamped to ground or absolute\n\
+    --writeLayers  if included, all intermediate layers will be written to shapefile\n'
     return
 
 if __name__ == "__main__":
