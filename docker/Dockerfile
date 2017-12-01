@@ -8,11 +8,7 @@ ENV PATH /data:$PATH
 RUN apt-get update && apt-get install -y --fix-missing --no-install-recommends \
         libhpdf-dev \
         python-all-dev \
-        python-numpy \
-	python-shapely \
-	python-geopandas \
-	python-scipy \
-	python-fastkml \
+	libspatialindex-c4v5 \
     libsqlite3-mod-spatialite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -47,6 +43,13 @@ RUN git clone https://github.com/PDAL/PDAL \
     && make -j 2\
     && make install \
     && rm -rf /PDAL
+
+RUN pip install --upgrade pip \
+    && pip install --upgrade numpy \
+    && pip install --upgrade rtree \
+    && pip install --upgrade scipy \
+    && pip install --upgrade fastkml \
+    && pip install --upgrade geopandas
 
 
 RUN pip install packaging \
