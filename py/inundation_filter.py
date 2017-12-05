@@ -116,7 +116,7 @@ def inundation(ins,outs):
         # select polygons above that intersect below points
         below_points_buffered = gpd.GeoDataFrame(crs=crs,geometry=below_points_gdf.buffer(1))
         if writeLayers:
-            below_points_buffered.to_file('shp/below_points_buffered.shp')
+            below_points_buffered.to_file('shp/%s_below_points_buffered.shp'%(outputFileName))
         sys.stdout.write("2b-1) Below points successfully buffered by 1m\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
         above_triangles_below = sjoin(above_triangles_gdf, below_points_buffered, how='left', op='intersects')
@@ -124,7 +124,7 @@ def inundation(ins,outs):
         above_triangels_clean_union = cascaded_union(above_triangles_clean.geometry)
         above_triangels_clean_union_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangels_clean_union if not i.is_empty])
         if writeLayers:
-            above_triangles_clean.to_file('shp/%s_above_triangles.shp'%(outputFileName))
+            above_triangles_clean.to_file('shp/%s_above_triangles_clean.shp'%(outputFileName))
         sys.stdout.write("2b-2 - 2d) Above triangles coincident with below points(bufffered by 1) removed\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
 
