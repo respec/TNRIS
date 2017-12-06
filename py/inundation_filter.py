@@ -1,6 +1,8 @@
 import sys, os
 import zipfile
 import time
+import logging
+logging.basicConfig()
 
 sys.path.append('/data/py')
 last = None
@@ -12,7 +14,7 @@ def inundation(ins,outs):
     global start, last
     last = time.time()
     from shapely.geometry import Polygon, Point
-    from shapely.ops import cascaded_union
+    from shapely.ops import cascaded_union,unary_union
     import numpy as np
     import geopandas as gpd
     from geopandas.tools import sjoin
@@ -67,6 +69,7 @@ def inundation(ins,outs):
 
     below_points = gpd.GeoSeries([Point(i) for i in below_array])
     below_points_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_points])
+    del below_points
     if writeLayers:
         below_points_gdf.to_file('shp/%s_below_points.shp'%(outputFileName))
         # fiona can't overwrite a geojson, remove first
@@ -74,13 +77,15 @@ def inundation(ins,outs):
         below_points_gdf.to_file('geojson/%s_below_points.geojson'%(outputFileName), driver='GeoJSON')
 
     flood_triangles = alpha_shape(gpd.GeoSeries([Point(i) for i in below_array[:,0:2]]),0.03)
-    flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in flood_triangles[0] if not i.is_empty])
+    flood_triangles_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(0) for i in flood_triangles[0] if not i.is_empty])
     if writeLayers:
         flood_triangles_gdf.to_file('shp/%s_below_triangles.shp'%(outputFileName))
     sys.stdout.write("1a) Below points successfully triangulated\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
     sys.stdout.flush()
 
-    below_polygon = cascaded_union(flood_triangles_gdf.geometry)
+    # below_polygon = cascaded_union(flood_triangles_gdf.geometry)
+    # below_polygon = flood_triangles_gdf.geometry.unary_union()
+    below_polygon = unary_union(flood_triangles_gdf.geometry)
     below_polygon_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in below_polygon if not i.is_empty])
     if writeLayers:
         below_polygon_gdf.to_file('shp/%s_below_polygon.shp'%(outputFileName))
@@ -121,21 +126,27 @@ def inundation(ins,outs):
         sys.stdout.flush()
         above_triangles_below = sjoin(above_triangles_gdf, below_points_buffered, how='left', op='intersects')
         above_triangles_clean = above_triangles_below[above_triangles_below.index_right.isnull()]
-        above_triangels_clean_union = cascaded_union(above_triangles_clean.geometry)
-        above_triangels_clean_union_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangels_clean_union if not i.is_empty])
+        above_triangles_clean_gdf = gpd.GeoDataFrame(crs=crs, geometry=[i.buffer(0) for i in above_triangles_clean.geometry if not i.is_empty])
+        # above_triangles_clean_union = cascaded_union(above_triangles_clean.geometry)
+        above_triangles_clean_union = unary_union(above_triangles_clean_gdf.geometry)
+        # above_triangles_clean_union = above_triangles_clean.geometry.unary_union()
+        above_triangles_clean_union_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in above_triangles_clean_union if not i.is_empty])
         if writeLayers:
-            above_triangles_clean.to_file('shp/%s_above_triangles_clean.shp'%(outputFileName))
+            above_triangles_clean_gdf.to_file('shp/%s_above_triangles_clean.shp'%(outputFileName))
         sys.stdout.write("2b-2 - 2d) Above triangles coincident with below points(bufffered by 1) removed\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
 
 
         # innundation = below_polygon_gdf.difference(above_polygon_gdf)
-        inundation = gpd.overlay(below_polygon_gdf,above_triangels_clean_union_gdf,how='difference')
+        inundation = gpd.overlay(below_polygon_gdf,above_triangles_clean_union_gdf,how='difference')
         sys.stdout.write("3) Inundation layer created from difference of below polygon and cleaned above polygon\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
-        inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(-2,join_style=1).buffer(10,join_style=1).buffer(-8,join_style=1) for i in inundation.geometry])
-        inundation_gdf = inundation_gdf[inundation_gdf.is_empty==False]
-        inundation_clean_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in cascaded_union(inundation_gdf.geometry)])
+        inundation_smoothed = gpd.GeoSeries([i.buffer(-2,join_style=1).buffer(10,join_style=1).buffer(-8,join_style=1) for i in inundation.geometry])
+        inundation_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i.buffer(0) for i in inundation_smoothed if not i.is_empty])
+        # inundation_gdf_2 = inundation_gdf_1[inundation_gdf_1.is_empty==False]
+        # inundation_clean_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in cascaded_union(inundation_gdf.geometry)])
+        inundation_clean_gdf = gpd.GeoDataFrame(crs=crs,geometry=[i for i in unary_union(inundation_gdf.geometry)])
+        # inundation_clean_gdf = gpd.GeoDataFrame(crs=crs,geometry=inundation_gdf.geometry.unary_union())
         sys.stdout.write("4) Inundation layer smoothed\n     - %s/%s seconds (last step/total).\n"%(eval(",".join([str(i) for i in toc()]))))
         sys.stdout.flush()
         if writeLayers:
