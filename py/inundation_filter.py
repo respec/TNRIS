@@ -14,7 +14,7 @@ def inundation(ins,outs):
     global start, last
     last = time.time()
     from shapely.geometry import Polygon, Point
-    from shapely.ops import cascaded_union,unary_union
+    from shapely.ops import unary_union
     import numpy as np
     import geopandas as gpd
     from geopandas.tools import sjoin
